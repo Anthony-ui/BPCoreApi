@@ -1,0 +1,69 @@
+# Compilación de .NET
+**/bin/
+**/obj/
+artifacts/
+
+# Visual Studio, Visual Studio Code y Rider
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Configuración local y secretos
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/appsettings.*.local.json
+**/secrets.json
+.env
+.env.*
+!.env.example
+
+# Certificados y claves
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+*.crt
+
+# Registros y archivos temporales
+*.log
+logs/
+.temp-hash/
+TestResults/
+coverage/
+*.tmp
+*.temp
+
+# Paquetes y herramientas
+packages/
+*.nupkg
+*.snupkg
+.nuget/
+
+# Publicaciones
+publish/
+out/
+
+# Frontends incluidos en la solución
+**/node_modules/
+**/dist/
+**/www/
+.angular/
+.sass-cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Docker local
+docker-compose.override.yml
+*.local.yml
