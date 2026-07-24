@@ -9,13 +9,13 @@ using Duende.IdentityServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
-var cadenaConexion = builder.Configuration.GetConnectionString("Banco")
-    ?? throw new InvalidOperationException("Falta ConnectionStrings:Banco.");
+var cadenaConexion = ObtenerCadenaConexion(builder.Configuration);
 
 builder.Services.AddDbContext<ContextoBanco>(opciones =>
     opciones.UseNpgsql(cadenaConexion));
@@ -151,5 +151,53 @@ app.MapControllers();
 app.MapHub<HubNotificaciones>("/hubs/notificaciones");
 await Auth.InicializarAsync(app.Services, app.Configuration);
 app.Run();
+
+static string ObtenerCadenaConexion(IConfiguration configuracion)
+{
+    var cadenaConfigurada = configuracion.GetConnectionString("Banco");
+    if (!string.IsNullOrWhiteSpace(cadenaConfigurada))
+    {
+        return cadenaConfigurada;
+    }
+
+    var urlBaseDatos = configuracion["DATABASE_URL"];
+    if (!string.IsNullOrWhiteSpace(urlBaseDatos) &&
+        Uri.TryCreate(urlBaseDatos, UriKind.Absolute, out var direccion))
+    {
+        var credenciales = direccion.UserInfo.Split(':', 2);
+        return new NpgsqlConnectionStringBuilder
+        {
+            Host = direccion.Host,
+            Port = direccion.Port,
+            Database = direccion.AbsolutePath.Trim('/'),
+            Username = Uri.UnescapeDataString(credenciales[0]),
+            Password = credenciales.Length > 1
+                ? Uri.UnescapeDataString(credenciales[1])
+                : string.Empty,
+            SslMode = SslMode.Prefer
+        }.ConnectionString;
+    }
+
+    var servidor = configuracion["PGHOST"];
+    var baseDatos = configuracion["PGDATABASE"];
+    var usuario = configuracion["PGUSER"];
+    if (!string.IsNullOrWhiteSpace(servidor) &&
+        !string.IsNullOrWhiteSpace(baseDatos) &&
+        !string.IsNullOrWhiteSpace(usuario))
+    {
+        return new NpgsqlConnectionStringBuilder
+        {
+            Host = servidor,
+            Port = int.TryParse(configuracion["PGPORT"], out var puerto) ? puerto : 5432,
+            Database = baseDatos,
+            Username = usuario,
+            Password = configuracion["PGPASSWORD"],
+            SslMode = SslMode.Prefer
+        }.ConnectionString;
+    }
+
+    throw new InvalidOperationException(
+        "Falta la conexión PostgreSQL. Configure ConnectionStrings__Banco o DATABASE_URL.");
+}
 
 public partial class Program;
