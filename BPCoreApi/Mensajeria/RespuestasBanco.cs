@@ -22,7 +22,9 @@ public sealed record MovimientoRespuesta(
     decimal Monto,
     decimal? SaldoResultante,
     string Descripcion,
-    DateTime OcurridoEn);
+    DateTime OcurridoEn,
+    string? Contraparte,
+    string? CuentaContraparteEnmascarada);
 
 public sealed record RespuestaPaginada<T>(
     IReadOnlyCollection<T> Elementos,

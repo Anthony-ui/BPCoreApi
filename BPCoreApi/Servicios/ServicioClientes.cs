@@ -88,7 +88,30 @@ public sealed class ServicioClientes(
             .Skip((pagina - 1) * tamanoPagina)
             .Take(tamanoPagina)
             .Select(x => new MovimientoRespuesta(
-                x.Id, x.Tipo, x.Monto, x.SaldoResultante, x.Descripcion, x.OcurridoEn))
+                x.Id,
+                x.Tipo,
+                x.Monto,
+                x.SaldoResultante,
+                x.Descripcion,
+                x.OcurridoEn,
+                x.Transferencia == null
+                    ? null
+                    : x.Tipo == "CREDITO"
+                        ? x.Transferencia.CuentaOrigen.Cliente.Nombres + " "
+                            + x.Transferencia.CuentaOrigen.Cliente.Apellidos
+                        : x.Transferencia.Beneficiario != null
+                            ? x.Transferencia.Beneficiario.NombreBeneficiario
+                            : _context.Cuentas
+                                .Where(c => c.Numero == x.Transferencia.CuentaDestino)
+                                .Select(c => c.Cliente.Nombres + " " + c.Cliente.Apellidos)
+                                .FirstOrDefault() ?? x.Transferencia.InstitucionDestino,
+                x.Transferencia == null
+                    ? null
+                    : x.Tipo == "CREDITO"
+                        ? "****" + x.Transferencia.CuentaOrigen.Numero.Substring(
+                            x.Transferencia.CuentaOrigen.Numero.Length - 4)
+                        : "****" + x.Transferencia.CuentaDestino.Substring(
+                            x.Transferencia.CuentaDestino.Length - 4)))
             .ToArrayAsync(cancelacion);
 
         return new RespuestaPaginada<MovimientoRespuesta>(elementos, pagina, tamanoPagina, total);
