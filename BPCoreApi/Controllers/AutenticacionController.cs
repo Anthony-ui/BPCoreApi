@@ -18,11 +18,13 @@ namespace BPCoreApi.Controllers;
 public sealed class AutenticacionController(
     ContextoBanco context,
     IPasswordHasher<Usuario> generadorHash,
-    IIdentityServerInteractionService interaccion) : ControllerBase
+    IIdentityServerInteractionService interaccion,
+    IConfiguration configuracion) : ControllerBase
 {
     private readonly ContextoBanco _context = context;
     private readonly IPasswordHasher<Usuario> _generadorHash = generadorHash;
     private readonly IIdentityServerInteractionService _interaccion = interaccion;
+    private readonly IConfiguration _configuracion = configuracion;
 
     [HttpGet("iniciar")]
     public IActionResult Iniciar([FromQuery(Name = "returnUrl")] string retorno) =>
@@ -92,7 +94,12 @@ public sealed class AutenticacionController(
         var contexto = logoutId is null
             ? null
             : await _interaccion.GetLogoutContextAsync(logoutId, cancelacion);
-        return Redirect(contexto?.PostLogoutRedirectUri ?? "http://localhost:4200");
+        var urlPublicada = _configuracion["Autenticacion:Spa:UrlPublicada"];
+        var retornoPredeterminado = !string.IsNullOrWhiteSpace(urlPublicada)
+            ? $"{urlPublicada.TrimEnd('/')}/"
+            : _configuracion["Autenticacion:Spa:Origen"]
+                ?? "http://localhost:4200";
+        return Redirect(contexto?.PostLogoutRedirectUri ?? retornoPredeterminado);
     }
 
     private static string ConstruirPagina(string retorno, string? error = null)
