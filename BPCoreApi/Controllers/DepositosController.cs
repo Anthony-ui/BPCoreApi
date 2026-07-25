@@ -14,7 +14,6 @@ namespace BPCoreApi.Controllers;
 
 [ApiController]
 [Route("api/administracion/depositos")]
-[AllowAnonymous]
 public sealed class DepositosController(
     ContextoBanco context,
     IEnumerable<IProveedorNotificaciones> proveedores,
@@ -28,6 +27,7 @@ public sealed class DepositosController(
     private readonly IHubContext<HubNotificaciones> _hubNotificaciones = hubNotificaciones;
 
     [HttpPost]
+    [AllowAnonymous]
     [ProducesResponseType<DepositoRespuesta>(StatusCodes.Status201Created)]
     public async Task<ActionResult<DepositoRespuesta>> Crear(
         [FromBody] SolicitudDeposito solicitud,

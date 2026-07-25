@@ -10,7 +10,6 @@ namespace BPCoreApi.Controllers;
 
 [ApiController]
 [Route("api/administracion/usuarios")]
-[AllowAnonymous]
 public sealed class AdministracionUsuariosController(
     ContextoBanco context,
     IPasswordHasher<Usuario> generadorHash) : ControllerBase
@@ -19,6 +18,7 @@ public sealed class AdministracionUsuariosController(
     private readonly IPasswordHasher<Usuario> _generadorHash = generadorHash;
 
     [HttpPost]
+    [AllowAnonymous]
     [ProducesResponseType<UsuarioCreadoRespuesta>(StatusCodes.Status201Created)]
     public async Task<ActionResult<UsuarioCreadoRespuesta>> Crear([FromBody] SolicitudCreacionUsuario solicitud,
                                                                   CancellationToken cancelacion)
