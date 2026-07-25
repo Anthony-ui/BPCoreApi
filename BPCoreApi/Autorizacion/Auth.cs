@@ -23,6 +23,8 @@ public static class Auth
             ?? throw new InvalidOperationException("Falta Autenticacion:Spa:Origen.");
         var clienteId = configuracion["Autenticacion:Spa:ClienteId"]
             ?? throw new InvalidOperationException("Falta Autenticacion:Spa:ClienteId.");
+        var origenSpaPublicado = configuracion["Autenticacion:Spa:OrigenPublicado"];
+        var urlSpaPublicada = configuracion["Autenticacion:Spa:UrlPublicada"]?.TrimEnd('/');
         var origenMovil = configuracion["Autenticacion:Movil:Origen"]
             ?? throw new InvalidOperationException("Falta Autenticacion:Movil:Origen.");
         var clienteMovilId = configuracion["Autenticacion:Movil:ClienteId"]
@@ -57,9 +59,14 @@ public static class Auth
                     UserClaims = { "cliente_id" }
                 }.ToEntity());
         }
-        if (!await contextoConfiguracion.Clients.AnyAsync(x => x.ClientId == clienteId, cancelacion))
+        var clienteSpa = await contextoConfiguracion.Clients
+            .Include(x => x.RedirectUris)
+            .Include(x => x.PostLogoutRedirectUris)
+            .Include(x => x.AllowedCorsOrigins)
+            .SingleOrDefaultAsync(x => x.ClientId == clienteId, cancelacion);
+        if (clienteSpa is null)
         {
-            contextoConfiguracion.Clients.Add(new Client
+            var configuracionClienteSpa = new Client
             {
                 ClientId = clienteId,
                 ClientName = "Banco BP Web",
@@ -76,7 +83,45 @@ public static class Auth
                     "banca.consultar", "banca.transferir"
                 },
                 AccessTokenLifetime = 900
-            }.ToEntity());
+            };
+            if (!string.IsNullOrWhiteSpace(origenSpaPublicado)
+                && !string.IsNullOrWhiteSpace(urlSpaPublicada))
+            {
+                configuracionClienteSpa.RedirectUris.Add(
+                    $"{urlSpaPublicada}/auth/callback");
+                configuracionClienteSpa.PostLogoutRedirectUris.Add(
+                    $"{urlSpaPublicada}/");
+                configuracionClienteSpa.AllowedCorsOrigins.Add(origenSpaPublicado);
+            }
+            contextoConfiguracion.Clients.Add(configuracionClienteSpa.ToEntity());
+        }
+        else if (!string.IsNullOrWhiteSpace(origenSpaPublicado)
+                 && !string.IsNullOrWhiteSpace(urlSpaPublicada))
+        {
+            var uriRetorno = $"{urlSpaPublicada}/auth/callback";
+            var uriCierre = $"{urlSpaPublicada}/";
+            if (!clienteSpa.RedirectUris.Any(x => x.RedirectUri == uriRetorno))
+            {
+                clienteSpa.RedirectUris.Add(new()
+                {
+                    RedirectUri = uriRetorno
+                });
+            }
+            if (!clienteSpa.PostLogoutRedirectUris.Any(
+                    x => x.PostLogoutRedirectUri == uriCierre))
+            {
+                clienteSpa.PostLogoutRedirectUris.Add(new()
+                {
+                    PostLogoutRedirectUri = uriCierre
+                });
+            }
+            if (!clienteSpa.AllowedCorsOrigins.Any(x => x.Origin == origenSpaPublicado))
+            {
+                clienteSpa.AllowedCorsOrigins.Add(new()
+                {
+                    Origin = origenSpaPublicado
+                });
+            }
         }
         if (!await contextoConfiguracion.Clients.AnyAsync(x => x.ClientId == clienteMovilId, cancelacion))
         {
